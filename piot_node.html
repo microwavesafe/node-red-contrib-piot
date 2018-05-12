@@ -1,0 +1,258 @@
+
+<script type="text/x-red" data-template-name="piot in">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name">
+    </div>
+    <div class="form-row node-input-network">
+        <label for="node-input-network"><i class="fa fa-random"></i> Network</label>
+        <input type="text" id="node-input-network">
+    </div>
+    <div class="form-row">
+        <label for="node-input-address"><i class="fa fa-cog"></i> Address</label>
+        <input type="text" id="node-input-address">
+    </div>
+    <div class="form-row">
+        <label for="node-input-pin"><i class="fa fa-cog"></i> Pin</label>
+        <input type="text" id="node-input-pin">
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="piot in">
+    <p>Provides a connection to a pin that creates data on a PiOT node</p>
+    <p>Network must have the same settings as PiOT node</p>
+    <p>Address and pin determine which node and which pin will receive the data</p>
+    <p>Data is copied to msg.payload</>
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('piot in',{
+        category: 'input',
+        defaults: {
+            network: {type:"piot-network",required:true},
+            address: {value:"",required:true},
+            pin: {value:1, required:true, validate:RED.validators.number()},
+            name: {value:""}
+        },
+        color:"#FFAAAA",
+        inputs:0,
+        outputs:1,
+        icon: "bridge.png",
+        label: function() {
+            //var serialNode = RED.nodes.node(this.serial);
+            return this.name||"piot in";
+        },
+    });
+</script>
+
+<script type="text/x-red" data-template-name="piot out">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name">
+    </div>    
+    <div class="form-row node-input-network">
+        <label for="node-input-network"><i class="fa fa-random"></i> Network</label>
+        <input type="text" id="node-input-network">
+    </div>
+    <div class="form-row">
+        <label for="node-input-address"><i class="fa fa-cog"></i> Address</label>
+        <input type="text" id="node-input-address">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-port"><i class="fa fa-cog"></i> Pin</label>
+        <input type="text" id="node-input-pin">
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="piot out">
+    <p>Provides a connection to controllable pin on a PiOT node</p>
+    <p>Network must have the same settings as PiOT node</p>
+    <p>Address and pin determine which node and which pin will receive the data</p>
+    <p>Binary payload is sent to PiOT node, using settings in Network</>
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('piot out',{
+        category: 'output',
+        defaults: {
+            network: {type:"piot-network",required:true},
+            // TODO: validate address is unsigned 32bit integer
+            address: {value:"",required:true},
+            // TODO: validate pin is unsigned 16bit integer
+            pin: {value:1, required:true, validate:RED.validators.number()},
+            name: {value:""}
+        },
+        color:"#FFAAAA",
+        inputs:1,
+        outputs:0,
+        icon: "bridge.png",
+        align: "right",
+        label: function() {
+            //var serialNode = RED.nodes.node(this.serial);
+            return this.name||"piot out";
+        },
+    });
+</script>
+
+
+<script type="text/x-red" data-template-name="piot-network">
+    <div class="form-row">
+        <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-config-input-name">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-serialport"><i class="fa fa-random"></i> Serial Port</label>
+        <input type="text" id="node-config-input-serialport" style="width:60%;" placeholder="Select serial port...">
+        <a id="node-config-lookup-serialport" class="btn"><i id="node-config-lookup-serialport-icon" class="fa fa-search"></i></a>
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-port"><i class="fa fa-sitemap"></i> Port Number</label>
+        <input type="text" id="node-config-input-port">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-networktype"><i class="fa fa-cog"></i> Type</label>
+        <select type="text" id="node-config-input-networktype" style="width:120px;">
+            <option value="0">unreliable</option>
+            <option value="1">reliable</option>
+            <option value="2">secure</option>
+        </select>
+    </div>
+    <div id="node-config-encrypted" class="form-row">
+        <label style="width: auto;" for="node-config-input-encrypted"><i class="fa fa-lock"></i> Encrypted</label>
+        <input style="width: 30px;margin-left: 10px; vertical-align: top;" type="checkbox" id="node-config-input-encrypted">
+    </div>
+    <div id="node-config-key" class="form-row">
+        <label for="node-config-input-key"><i class="fa fa-key"></i> Key</label>
+        <input type="text" id="node-config-input-key">
+    </div>
+    <div class="form-row">
+        <i class="fa fa-angle-down" style="transform: rotate(270deg);"></i><label style="margin-left:10px;font-weight:bold" > Advanced</label>
+        <div id="node-config-advanced">
+            <div class="form-row">
+                <label for="node-config-input-filter"><i class="fa fa-filter"></i> Filter</label>
+                <input type="text" id="node-config-input-filter">
+            </div>
+            <div class="form-row">
+                <label style="width: auto;" for="node-config-input-blockbroadcast"><i class="fa fa-ban"></i> Block Broadcast</label>
+                <input style="width: 30px;margin-left: 10px; vertical-align: top;" type="checkbox" id="node-config-input-blockbroadcast">
+            </div>
+        </div>
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="piot-network">
+    <p>Provides configuration options for a PiOT network.</p>
+    <p>The search button should return a list of available serial ports to choose from, or you
+    can type in the location if known.</p>
+    <p>Type 0 is unreliable network, 1 is reliable (remote end provides handshake), 2 uses challange response to prevent replay attacks</p>
+    <p id="tip-encrypted">
+        When encrypted the radio packet is encrypted using ChaCha20 and authenticated using Poly1305 MAC.
+        Without encryption, the radio packet uses a CRC16 checksum to ensure packet is received correctly.
+    </p>
+    <p id="tip-key">
+        Key must be 32 byte hexadecimal, so 64 characters long
+    </p>
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('piot-network',{
+        category: 'config',
+        defaults: {
+            serialport: {value:"",required:true},
+            port: {value:1234,required:true,validate:function(v) {
+                if (v < 0 || v > 65535) {
+                    return false;
+                }
+                return true;
+            }},
+            networktype: {value:0,required:true},
+            encrypted: {value:false},
+            name: {value:""},
+            blockbroadcast: {value: false},
+            filter: {value: ""},
+        },
+        credentials: {
+            key: {type:"text",validate:function(v) {
+                if ($("#node-config-input-key").val().length == 64) {
+                    let parsedInt = parseInt($("#node-config-input-key").val(), 16);
+                    console.log(parsedInt.toString(16))
+                    //if (parsedInt.toString(16) === $("#node-config-input-key").val().toLowerCase()) {
+                        return true;
+                    //}                    
+                }
+                return !$("#node-config-input-encrypted").prop('checked');
+            }},
+        },
+        label: function() {
+            return this.name || "PiOT " + this.port;
+        },
+        oneditprepare: function() {
+            let previous = null;
+
+            let updateKey = function() {
+                if ($("#node-config-input-encrypted").prop('checked') == true) {
+                    $("#node-config-key").show(100);
+                    $("#tip-key").show(100);
+                }
+                else {
+                    $("#node-config-key").hide(100);
+                    $("#tip-key").hide(100);
+                }
+            }
+
+            let updateEncrypted = function() {
+                if ($("#node-config-input-networktype").val() == 0) {
+                    $("#node-config-encrypted").show(100);
+                    $("tip-encrypted").show(100);
+                }
+                else if ($("#node-config-input-networktype").val() == 1) {
+                    $("#node-config-encrypted").show(100);
+                    $("tip-encrypted").show(100);
+                }
+                else if ($("#node-config-input-networktype").val() == 2) {
+                    $("#node-config-encrypted").hide(100);
+                    $("tip-encrypted").hide(100);
+                    $("#node-config-input-encrypted").prop('checked', true);
+                    updateKey();
+                }
+                else {
+                    $("#node-config-encrypted").hide(100);
+                    $("tip-encrypted").hide(100);
+                    $("#node-config-input-encrypted").prop('checked', false);
+                    updateKey();                
+                }
+            }
+
+            updateKey();
+            updateEncrypted();
+
+            $("#node-config-input-networktype").change(function() {
+                updateEncrypted();
+            });
+
+            $("#node-config-input-encrypted").change(function() {
+                updateKey();
+            });
+
+            try {
+                $("#node-config-input-serialport").autocomplete( "destroy" );
+            } catch(err) {
+            }
+
+            $("#node-config-lookup-serialport").click(function() {
+                $("#node-config-lookup-serialport").addClass('disabled');
+
+                $.getJSON('piotcontrollers',function(data) {
+                    $("#node-config-lookup-serialport").removeClass('disabled');
+                    $("#node-config-input-serialport").autocomplete({
+                        source:data,
+                        minLength:0,
+                        close: function( event, ui ) {
+                            $("#node-config-input-serialport").autocomplete( "destroy" );
+                        }
+                    }).autocomplete("search","");
+                });
+            });
+        },
+    });
+</script>

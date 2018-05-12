@@ -1,0 +1,20 @@
+{
+  "name": "node-red-contrib-piot",
+  "version": "0.1.0",
+  "description": "Node-RED nodes to talk to PiOT network",
+  "keywords": [
+    "node-red",
+    "piot"
+  ],
+  "dependencies": {
+    "piot": "git+https://github.com/microwavesafe/piot-js.git"
+  },
+  "author": "andrew.gatt@springltd.co",
+  "license": "Apache-2.0",
+  "node-red": {
+    "version": ">=0.16.0",
+    "nodes": {
+      "piot-network": "piot_node.js"
+    }
+  }
+}
