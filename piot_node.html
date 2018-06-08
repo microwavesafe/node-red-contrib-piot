@@ -30,8 +30,19 @@
         category: 'input',
         defaults: {
             network: {type:"piot-network",required:true},
-            address: {value:"",required:true},
-            pin: {value:1, required:true, validate:RED.validators.number()},
+            address: {value:"",required:true, validate:function(v) {
+                let address = parseInt(v);
+                if (address < 1 || address > 4294967295) {
+                    return false;
+                }
+                return true;
+            }},
+            pin: {value:1, required:true, validate:function(v) {
+                if (v < 0 || v > 65535) {
+                    return false;
+                }
+                return true;
+            }},
             name: {value:""}
         },
         color:"#FFAAAA",
@@ -76,10 +87,19 @@
         category: 'output',
         defaults: {
             network: {type:"piot-network",required:true},
-            // TODO: validate address is unsigned 32bit integer
-            address: {value:"",required:true},
-            // TODO: validate pin is unsigned 16bit integer
-            pin: {value:1, required:true, validate:RED.validators.number()},
+            address: {value:"",required:true, validate:function(v) {
+                let address = parseInt(v);
+                if (address < 1 || address > 4294967295) {
+                    return false;
+                }
+                return true;
+            }},
+            pin: {value:1, required:true, validate:function(v) {
+                if (v < 0 || v > 65535) {
+                    return false;
+                }
+                return true;
+            }},
             name: {value:""}
         },
         color:"#FFAAAA",
@@ -169,7 +189,13 @@
             encrypted: {value:false},
             name: {value:""},
             blockbroadcast: {value: false},
-            filter: {value: ""},
+            filter: {value: "",validate:function(v) {
+                let filter = parseInt(v);
+                if (filter < 1 || filter > 4294967295) {
+                    return false;
+                }
+                return true;
+            }},
         },
         credentials: {
             key: {type:"text",validate:function(v) {

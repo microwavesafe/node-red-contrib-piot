@@ -2,7 +2,8 @@ module.exports = function(RED) {
     "use strict";
     var settings = RED.settings;
     const Piot = require("piot");
-    const { getInt16, getInt32, setInt16, setString } = require( './lib/bytes')
+    const PiotConstants = require("piot/constants")
+    const { getInt16, getInt32, setInt16, setString, setHexString } = require( './lib/bytes')
     let connections = {};
     
     function SetNodeStatus(node, connected) {
@@ -16,15 +17,32 @@ module.exports = function(RED) {
 
     function PiotNetworkNode(n) {
         RED.nodes.createNode(this,n);
-        this.type = n.type;
+        this.networktype = n.networktype;
         this.serialport = n.serialport;
         this.port = parseInt(n.port);
-        let node = this;
+        this.encrypted = n.encrypted;
+        this.blockBroadcast = n.blockbroadcast;
+        this.filter = parseInt(n.filter);
 
-        if (this.credentials) {
-            this.key = this.credentials.key;
+        if (isNaN(this.filter)) {
+            this.filter = 0;
         }
 
+        if (encrypted) {
+            // fix encryption as ChaCha20 with Poly1305 and 6 byte nonce
+            // this can be modified to allow configuration by user
+            this.encryption = PiotConstants.CHACHA20_POLY1305_OPT1;
+        }
+        else {
+            this.encryption = 0;
+        }
+
+        this.encryptionKey = new Uint8Array(32);
+        if (this.credentials) {
+            setHexString (this.encryptionKey, 0, this.credentials.key);
+        }
+
+        let node = this;
         node.error("creating network node");
 
         if (!connections[this.serialport]) {
@@ -48,7 +66,7 @@ module.exports = function(RED) {
         this.connection.on('open', function() {
             node.error("opening sockets");
             node.connection.closeRadioSocket(node.port);
-            node.connection.openRadioSocket(0, node.port, 0, 0, 0, new Uint8Array(32));
+            node.connection.openRadioSocket(node.networktype, node.port, node.filter, node.blockBroadcast, node.encryption, node.encryptionKey);
         });
 
         this.on("close", function(done) {
@@ -123,7 +141,7 @@ module.exports = function(RED) {
         RED.nodes.createNode(this,n);
         // use parseInt as address could be set as hex
         this.address = parseInt(n.address);
-        this.pin = n.pin;
+        this.pin = parsesInt(n.pin);
         this.network = RED.nodes.getNode(n.network);
 
         if (this.network) {
@@ -139,11 +157,11 @@ module.exports = function(RED) {
             // of nodes are in the 100's
             node.network.connection.on('data', function(data) {
                 node.error("data event");
-                // first 4 bytes are address, next 2 bytes are port
+                // first 4 bytes are address, next 2 bytes are port, next 2 are pin, remaining are data
                 if (getInt32(data, 0) === node.address 
-                    && getInt16(data, 4) === port) {
-                    // TODO: check pin number as well
-                    node.send({"payload": data.slice(6), port:node.network.serialport});
+                    && getInt16(data, 4) === port
+                    && getInt16(data, 6) === node.pin) {
+                    node.send({"payload": data.slice(8), port:node.network.serialport});
                 }
                 else {
                     node.error("address didn't match " + node.address + " " + getInt32(data,0));
