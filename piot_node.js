@@ -2,7 +2,7 @@ module.exports = function(RED) {
     "use strict";
     var settings = RED.settings;
     const Piot = require("piot");
-    const PiotConstants = require("piot/constants")
+    const PiotConstants = require("piot/lib/constants")
     const { getInt16, getInt32, setInt16, setString, setHexString } = require( './lib/bytes')
     let connections = {};
     
