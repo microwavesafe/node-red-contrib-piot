@@ -28,7 +28,7 @@ module.exports = function(RED) {
             this.filter = 0;
         }
 
-        if (encrypted) {
+        if (this.encrypted) {
             // fix encryption as ChaCha20 with Poly1305 and 6 byte nonce
             // this can be modified to allow configuration by user
             this.encryption = PiotConstants.CHACHA20_POLY1305_OPT1;
@@ -38,15 +38,16 @@ module.exports = function(RED) {
         }
 
         this.encryptionKey = new Uint8Array(32);
+/*
         if (this.credentials) {
             setHexString (this.encryptionKey, 0, this.credentials.key);
         }
-
+*/
         let node = this;
-        node.error("creating network node");
+        node.info("creating network node");
 
         if (!connections[this.serialport]) {
-            node.error("creating connection");
+            node.info("creating serial connection");
 
             connections[this.serialport] = new Piot(this.serialport);
             this.previousError = "";
@@ -64,13 +65,13 @@ module.exports = function(RED) {
 
         // open handler per network configuration
         this.connection.on('open', function() {
-            node.error("opening sockets");
+            node.info("opening sockets");
             node.connection.closeRadioSocket(node.port);
             node.connection.openRadioSocket(node.networktype, node.port, node.filter, node.blockBroadcast, node.encryption, node.encryptionKey);
         });
 
         this.on("close", function(done) {
-            node.error("closing network node");
+            node.info("closing network node");
             node.connection.close(function() {
                 node.error("deleting references");
                 node.connection = null;
