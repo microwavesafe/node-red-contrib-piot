@@ -44,10 +44,10 @@ module.exports = function(RED) {
         }
 */
         let node = this;
-        node.info("creating network node");
+        node.log("creating network node");
 
         if (!connections[this.serialport]) {
-            node.info("creating serial connection");
+            node.log("creating serial connection");
 
             connections[this.serialport] = new Piot(this.serialport);
             this.previousError = "";
@@ -65,13 +65,13 @@ module.exports = function(RED) {
 
         // open handler per network configuration
         this.connection.on('open', function() {
-            node.info("opening sockets");
+            node.log("opening sockets");
             node.connection.closeRadioSocket(node.port);
             node.connection.openRadioSocket(node.networktype, node.port, node.filter, node.blockBroadcast, node.encryption, node.encryptionKey);
         });
 
         this.on("close", function(done) {
-            node.info("closing network node");
+            node.log("closing network node");
             node.connection.close(function() {
                 node.error("deleting references");
                 node.connection = null;
