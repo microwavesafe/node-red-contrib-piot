@@ -5,7 +5,7 @@ module.exports = function(RED) {
     const PiotConstants = require("piot/lib/constants")
     const { getInt16, getInt32, setInt16, setString, setHexString } = require( './lib/bytes')
     let connections = {};
-    
+
     function SetNodeStatus(node, connected) {
         if (connected) {
             node.status({fill:"green",shape:"dot",text:"node-red:common.status.connected"});
@@ -63,6 +63,14 @@ module.exports = function(RED) {
 
         this.connection = connections[this.serialport];
 
+        this.connection.on('data', function(data) {
+            let address = getInt32(data, 0);
+            let port = getInt16(data, 4);
+            let pin = getInt16(data, 6);
+            node.log("Received data, address " + address + " port " + port + " pin " + pin);
+        });
+
+
         // open handler per network configuration
         this.connection.on('open', function() {
             node.log("opening sockets");
@@ -73,7 +81,7 @@ module.exports = function(RED) {
         this.on("close", function(done) {
             node.log("closing network node");
             node.connection.close(function() {
-                node.error("deleting references");
+                node.log("deleting references");
                 node.connection = null;
                 connections[node.serialport] = null;
                 done();
@@ -103,25 +111,41 @@ module.exports = function(RED) {
 
             node.on("input",function(msg) {
                 if (msg.hasOwnProperty("payload")) {
-                    node.error("send packet");
 
-                    let payload = new Uint8Array(msg.payload.length + 2);
-                    // set pin number
-                    setInt16(payload, 0, this.pin);
+//                    node.log(typeof msg.payload);
+//                    node.log(msg.payload.length);
+//                    node.log(msg.payload instanceof Array);
 
-                    if (msg.payload instanceof String) {
-                        node.error("sending string");
-                        setString(payload, 2, msg.payload.length, msg.payload);
-                    }
-                    else if (msg.payload instanceof Buffer || msg.payload instanceof Uint8Array) {
-                        node.error("sending bytes");
-                        for (let i=0; i<msg.payload.length; i++) {
-                            payload[2 + i] = msg.payload[i];
+                    // TODO: convert boolean to single byte 0 or 1, convert number to uint32
+                    // TODO: for some reason an array passed through as msg.payload is giving false to msg.payload instanceof Array
+//		    if ((msg.payload instanceof String || msg.payload instanceof Buffer || msg.payload instanceof Uint8Array || msg.payload instanceof Array)
+		    if (typeof msg.payload.length != "undefined") {
+
+                        node.log("send packet");
+                        let payload = new Uint8Array(msg.payload.length + 2);
+                        // set pin number
+                        setInt16(payload, 0, this.pin);
+
+		        if (msg.payload instanceof String) {
+                            node.log("sending string");
+                            setString(payload, 2, msg.payload.length, msg.payload);
                         }
+                        else {
+                            node.log("sending bytes");
+                            for (let i=0; i<msg.payload.length; i++) {
+                                payload[2 + i] = msg.payload[i];
+                            }
+                        }
+
+                        // TODO: check for success or emit error if didn't send?
+                        connection.sendRadioPacket(node.address, port, payload);
                     }
-                    
-                    // TODO: check for success or emit error if didn't send?
-                    connection.sendRadioPacket(node.address, port, payload);
+                    else {
+                        node.error("Incorrect type in msg.payload MUST be String or Buffer or Array or Uint8Array");
+                    }
+                }
+                else {
+                    node.error("Message has no payload");
                 }
             });
             connection.on('open', function() {
@@ -142,7 +166,7 @@ module.exports = function(RED) {
         RED.nodes.createNode(this,n);
         // use parseInt as address could be set as hex
         this.address = parseInt(n.address);
-        this.pin = parsesInt(n.pin);
+        this.pin = parseInt(n.pin);
         this.network = RED.nodes.getNode(n.network);
 
         if (this.network) {
@@ -157,16 +181,20 @@ module.exports = function(RED) {
             // event complications for not much of a performance gain when number
             // of nodes are in the 100's
             node.network.connection.on('data', function(data) {
-                node.error("data event");
-                // first 4 bytes are address, next 2 bytes are port, next 2 are pin, remaining are data
-                if (getInt32(data, 0) === node.address 
-                    && getInt16(data, 4) === port
-                    && getInt16(data, 6) === node.pin) {
-                    node.send({"payload": data.slice(8), port:node.network.serialport});
+                if (data.length >= 8) {
+                    // first 4 bytes are address, next 2 bytes are port, next 2 are pin, remaining are data
+                    let sentAddress = getInt32(data, 0);
+                    let sentPort = getInt16(data, 4);
+                    let sentPin = getInt16(data, 6);
+
+                    if (sentAddress === node.address
+                        && sentPort === port
+                        && sentPin === node.pin) {
+                        node.send({"payload": data.slice(8), port:node.network.serialport});
+                    }
                 }
                 else {
-                    node.error("address didn't match " + node.address + " " + getInt32(data,0));
-                    node.error("port didn't match " + node.network.port + " " + getInt16(data,4));
+                    node.error("Received data too short");
                 }
             });
             connection.on('open', function() {

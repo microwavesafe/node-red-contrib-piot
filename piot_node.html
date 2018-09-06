@@ -79,7 +79,8 @@
     <p>Provides a connection to controllable pin on a PiOT node</p>
     <p>Network must have the same settings as PiOT node</p>
     <p>Address and pin determine which node and which pin will receive the data</p>
-    <p>Binary payload is sent to PiOT node, using settings in Network</>
+    <p>msg.payload MUST be string or array/uint8array. Other types will be ignored</p>
+    <p>This payload is sent to the PiOT node at the specified address, along with the pin number, using settings in Network</>
 </script>
 
 <script type="text/javascript">
